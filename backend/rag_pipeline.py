@@ -21,8 +21,14 @@ llm = ChatGroq(
     max_tokens=1024
 )
 
-# Embeddings
-embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+# Lazy load embeddings — only loads when first needed
+_embeddings = None
+
+def get_embeddings():
+    global _embeddings
+    if _embeddings is None:
+        _embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+    return _embeddings
 
 # Text splitter
 splitter = RecursiveCharacterTextSplitter(
@@ -58,7 +64,7 @@ def process_document(file_path: str, session_id: str) -> int:
 
     Chroma.from_documents(
         documents=chunks,
-        embedding=embeddings,
+        embedding=get_embeddings(),        # ← changed
         collection_name=f"session_{session_id}",
         persist_directory=CHROMA_DIR
     )
@@ -67,7 +73,7 @@ def process_document(file_path: str, session_id: str) -> int:
 def answer_question(question: str, session_id: str) -> dict:
     vectorstore = Chroma(
         collection_name=f"session_{session_id}",
-        embedding_function=embeddings,
+        embedding_function=get_embeddings(),   # ← changed
         persist_directory=CHROMA_DIR
     )
     retriever = vectorstore.as_retriever(
@@ -87,7 +93,6 @@ def answer_question(question: str, session_id: str) -> dict:
 
     answer = chain.invoke(question)
 
-    # Get source pages
     source_docs = retriever.invoke(question)
     sources = list(set([
         f"Page {doc.metadata.get('page', 0) + 1}"
@@ -95,20 +100,15 @@ def answer_question(question: str, session_id: str) -> dict:
         if "page" in doc.metadata
     ]))
 
-    return {
-        "answer":  answer,
-        "sources": sources
-    }
+    return {"answer": answer, "sources": sources}
 
 def get_suggested_questions(session_id: str) -> list:
-    """Analyze document and generate relevant suggested questions."""
     vectorstore = Chroma(
         collection_name=f"session_{session_id}",
-        embedding_function=embeddings,
+        embedding_function=get_embeddings(),   # ← changed
         persist_directory=CHROMA_DIR
     )
 
-    # Get a sample of document content
     docs = vectorstore.similarity_search("main topic overview summary", k=5)
     context = "\n\n".join(doc.page_content for doc in docs)
 
@@ -125,15 +125,13 @@ Return format: ["Question 1?", "Question 2?", "Question 3?", "Question 4?"]"""
 
     import json
     text = completion.content.strip()
-    # Clean up any markdown
     text = text.replace("```json", "").replace("```", "").strip()
     return json.loads(text)
 
 def analyze_document_type(session_id: str) -> dict:
-    """Detect document type and suggest a structured flow."""
     vectorstore = Chroma(
         collection_name=f"session_{session_id}",
-        embedding_function=embeddings,
+        embedding_function=get_embeddings(),   # ← changed
         persist_directory=CHROMA_DIR
     )
 
@@ -161,9 +159,9 @@ Respond ONLY with valid JSON in this exact format:
 }}
 
 Rules:
-- If doc_type is "learning": flow should be a learning path (Introduction → Core Concepts → Examples → Practice)
-- If doc_type is "product": flow should be implementation steps (Overview → Architecture → Setup → Deployment)
-- If doc_type is "general": flow should be reading flow (Summary → Key Points → Details → Conclusions)"""
+- If doc_type is "learning": flow should be a learning path
+- If doc_type is "product": flow should be implementation steps
+- If doc_type is "general": flow should be reading flow"""
     )
 
     import json
