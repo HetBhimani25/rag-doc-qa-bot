@@ -1,7 +1,8 @@
 import os
 import chromadb
+import tempfile
 
-CHROMA_DIR = os.getenv("CHROMA_PERSIST_DIR", "./chroma_db")
+CHROMA_DIR = os.getenv("CHROMA_PERSIST_DIR", os.path.join(tempfile.gettempdir(), "chroma_db"))
 
 def delete_session(session_id: str):
     try:

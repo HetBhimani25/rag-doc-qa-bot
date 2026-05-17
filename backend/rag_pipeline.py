@@ -1,5 +1,6 @@
 import os
 import uuid
+import tempfile
 from dotenv import load_dotenv
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import PyPDFLoader, TextLoader
@@ -29,7 +30,7 @@ splitter = RecursiveCharacterTextSplitter(
     chunk_overlap=200
 )
 
-CHROMA_DIR = os.getenv("CHROMA_PERSIST_DIR", "./chroma_db")
+CHROMA_DIR = os.getenv("CHROMA_PERSIST_DIR", os.path.join(tempfile.gettempdir(), "chroma_db"))
 
 RAG_PROMPT = PromptTemplate(
     input_variables=["context", "question"],

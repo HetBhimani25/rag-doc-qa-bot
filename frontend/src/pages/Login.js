@@ -26,8 +26,8 @@ export default function Login() {
   return (
     <div style={styles.page}>
       <div style={styles.card}>
-        <div style={styles.logo}>🧠</div>
-        <h1 style={styles.title}>RAG<span style={styles.purple}>DocBot</span></h1>
+        <div style={styles.logo}>🧙‍♂️</div>
+        <h1 style={styles.title}>Doc<span style={styles.purple}>Whiz</span></h1>
         <p style={styles.sub}>Sign in to your account</p>
         <form onSubmit={handleSubmit}>
           <input style={styles.input} type="email" placeholder="Email"

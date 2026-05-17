@@ -13,7 +13,7 @@ from vector_store import delete_session as delete_vector_session
 
 load_dotenv()
 
-app = FastAPI(title="RAG Document Q&A Bot")
+app = FastAPI(title="DocWhiz API")
 
 origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(",")
 app.add_middleware(

@@ -50,8 +50,8 @@ export default function Home() {
         <Sparkle style={{ color: '#06b6d4', position: 'absolute', top: '16px', right: '16%', animationDelay: '0.5s', fontSize: '20px' }} />
         <Sparkle style={{ color: '#7c3aed', position: 'absolute', bottom: '16px', left: '20%', animationDelay: '1s', fontSize: '16px' }} />
         <Sparkle style={{ color: '#06b6d4', position: 'absolute', bottom: '24px', right: '20%', animationDelay: '0.3s' }} />
-        <h1 style={styles.heroTitle}>Document to<br /><span style={styles.heroHighlight}>answers</span></h1>
-        <p style={styles.heroSub}>Upload any PDF or TXT · AI-powered Q&A · Persistent history · Smart document analysis</p>
+        <h1 style={styles.heroTitle}>Doc<span style={styles.heroHighlight}>Whiz</span></h1>
+        <p style={styles.heroSub}>✨ Upload any document · Ask anything · Get instant AI answers</p>
       </div>
 
       {/* Main */}

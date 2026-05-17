@@ -15,8 +15,8 @@ export default function Navbar({ activeSession }) {
   return (
     <nav style={styles.nav}>
       <Link to="/" style={styles.brand}>
-        <span style={styles.brandBlack}>RAG</span>
-        <span style={styles.brandPurple}>DocBot</span>
+        <span style={styles.brandBlack}>Doc</span>
+        <span style={styles.brandPurple}>Whiz</span>
       </Link>
       <div style={styles.right}>
         <span style={styles.navBadge}>LangChain</span>
