@@ -15,9 +15,10 @@ load_dotenv()
 
 app = FastAPI(title="RAG Document Q&A Bot")
 
+origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -26,6 +27,13 @@ app.add_middleware(
 UPLOAD_DIR = "./uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
+@app.on_event("startup")
+async def startup_db_check():
+    try:
+        await users_col.find_one({})
+        print("✅ MongoDB connected")
+    except Exception as e:
+        print(f"❌ MongoDB connection failed: {e}")
 
 # ── HEALTH ──
 @app.get("/")

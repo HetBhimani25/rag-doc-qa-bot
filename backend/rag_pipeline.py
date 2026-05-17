@@ -169,31 +169,3 @@ Rules:
     text = completion.content.strip()
     text = text.replace("```json", "").replace("```", "").strip()
     return json.loads(text)
-
-
-def get_suggested_questions(session_id: str) -> list:
-    """Analyze document and generate relevant suggested questions."""
-    vectorstore = Chroma(
-        collection_name=f"session_{session_id}",
-        embedding_function=embeddings,
-        persist_directory=CHROMA_DIR
-    )
-
-    docs = vectorstore.similarity_search("main topic overview summary", k=5)
-    context = "\n\n".join(doc.page_content for doc in docs)
-
-    completion = llm.invoke(
-        f"""Based on the following document content, generate exactly 4 short, specific,
-and relevant questions a user might want to ask about this document.
-Return ONLY a JSON array of 4 question strings. No explanation, no markdown, no extra text.
-
-Document content:
-{context}
-
-Return format: ["Question 1?", "Question 2?", "Question 3?", "Question 4?"]"""
-    )
-
-    import json
-    text = completion.content.strip()
-    text = text.replace("```json", "").replace("```", "").strip()
-    return json.loads(text)

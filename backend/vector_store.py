@@ -1,10 +1,7 @@
 import os
 import chromadb
-from langchain_huggingface import HuggingFaceEmbeddings
 
 CHROMA_DIR = os.getenv("CHROMA_PERSIST_DIR", "./chroma_db")
-
-embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
 
 def delete_session(session_id: str):
     try:

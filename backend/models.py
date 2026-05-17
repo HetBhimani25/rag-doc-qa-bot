@@ -14,9 +14,6 @@ class QuestionRequest(BaseModel):
     session_id: str
     question:   str
 
-class DeleteRequest(BaseModel):
-    session_id: str
-
 class SuggestRequest(BaseModel):
     session_id: str
 
@@ -25,6 +22,3 @@ class BookmarkRequest(BaseModel):
     question:   str
     answer:     str
     sources:    list
-
-class DeleteBookmarkRequest(BaseModel):
-    bookmark_id: str
