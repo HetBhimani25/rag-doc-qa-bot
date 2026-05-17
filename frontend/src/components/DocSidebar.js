@@ -64,7 +64,7 @@ export default function DocSidebar({ activeSession, onSelectDoc, onNewUpload }) 
 }
 
 const styles = {
-  sidebar: { background: '#faf9ff', border: '2px solid #0f0a1e', borderRadius: '14px', overflow: 'hidden', boxShadow: '4px 4px 0px #0f0a1e' },
+  sidebar: { background: '#faf9ff', border: '2px solid #0f0a1e', borderRadius: '14px', overflow: 'hidden', boxShadow: '4px 4px 0px #0f0a1e', flexShrink: 0, display: 'flex', flexDirection: 'column' },
   header: { padding: '14px 16px', borderBottom: '2px solid #0f0a1e', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f3effe' },
   title: { fontSize: '13px', fontWeight: '800', color: '#0f0a1e', textTransform: 'uppercase', letterSpacing: '0.5px' },
   newBtn: { padding: '5px 12px', background: '#7c3aed', border: '2px solid #0f0a1e', borderRadius: '7px', color: '#fff', fontSize: '12px', fontWeight: '700', cursor: 'pointer', boxShadow: '2px 2px 0px #0f0a1e' },

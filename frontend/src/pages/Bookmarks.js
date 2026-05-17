@@ -1,12 +1,15 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import Navbar from '../components/Navbar';
-import { getBookmarks, deleteBookmark } from '../services/api';
+import { getBookmarks, deleteBookmark, getDocuments } from '../services/api';
 
 export default function Bookmarks() {
   const [bookmarks, setBookmarks] = useState([]);
   const [loading,   setLoading]   = useState(true);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const session = location.state?.session || null;
 
   useEffect(() => { fetchBookmarks(); }, []);
 
@@ -26,6 +29,20 @@ export default function Bookmarks() {
     } catch { toast.error('Failed to remove'); }
   };
 
+  const handleShow = async (b) => {
+    try {
+      const { data } = await getDocuments();
+      const docExists = data.find(d => d._id === b.session_id);
+      if (docExists) {
+        navigate('/', { state: { session: docExists, highlightMsgId: b._id } });
+      } else {
+        toast.error('The document for this chat has been deleted.');
+      }
+    } catch {
+      toast.error('Failed to verify document.');
+    }
+  };
+
   return (
     <div style={styles.page}>
       <Navbar />
@@ -35,7 +52,7 @@ export default function Bookmarks() {
             <h1 style={styles.title}>⭐ Bookmarks</h1>
             <p style={styles.sub}>Your saved answers across all documents</p>
           </div>
-          <Link to="/" style={styles.backBtn}>← Back to Chat</Link>
+          <Link to="/" state={{ session }} style={styles.backBtn}>← Back to Chat</Link>
         </div>
 
         {loading ? (
@@ -53,8 +70,10 @@ export default function Bookmarks() {
                 <div style={styles.cardHeader}>
                   <span style={styles.qIcon}>❓</span>
                   <p style={styles.question}>{b.question || 'Bookmarked answer'}</p>
+                  <button style={styles.showBtn} onClick={() => handleShow(b)}>Show</button>
                   <button style={styles.deleteBtn} onClick={() => handleDelete(b._id)}>✕</button>
                 </div>
+                {(b.filename || b.document_name) && <p style={styles.docName}>📄 {b.filename || b.document_name}</p>}
                 <p style={styles.answer}>{b.answer}</p>
                 {b.sources?.length > 0 && (
                   <div style={styles.sources}>
@@ -63,7 +82,12 @@ export default function Bookmarks() {
                     ))}
                   </div>
                 )}
-                <p style={styles.date}>{new Date(b.created_at).toLocaleDateString()}</p>
+                <p style={styles.date}>
+                  {(() => {
+                    const d = new Date(b.created_at);
+                    return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+                  })()}
+                </p>
               </div>
             ))}
           </div>
@@ -90,6 +114,8 @@ const styles = {
   cardHeader: { display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '12px' },
   qIcon: { fontSize: '16px', flexShrink: 0, marginTop: '2px' },
   question: { flex: 1, fontSize: '14px', fontWeight: '700', color: '#0f0a1e', lineHeight: '1.4' },
+  docName: { fontSize: '11px', color: '#7c3aed', fontWeight: '700', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' },
+  showBtn: { padding: '4px 10px', background: '#f3effe', border: '1.5px solid #a78bca', borderRadius: '6px', color: '#7c3aed', fontSize: '12px', fontWeight: '700', cursor: 'pointer', flexShrink: 0 },
   deleteBtn: { background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', fontSize: '14px', flexShrink: 0 },
   answer: { fontSize: '13px', color: '#334155', lineHeight: '1.7', marginBottom: '12px', padding: '10px', background: '#faf9ff', borderRadius: '8px', border: '1px solid #e2e8f0' },
   sources: { display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '10px' },

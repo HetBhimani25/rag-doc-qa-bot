@@ -13,7 +13,7 @@ function highlightKeywords(text, keywords) {
   );
 }
 
-export default function ChatBox({ session }) {
+export default function ChatBox({ session, highlightMsgId }) {
   const [messages,   setMessages]   = useState([]);
   const [question,   setQuestion]   = useState('');
   const [loading,    setLoading]    = useState(false);
@@ -21,10 +21,29 @@ export default function ChatBox({ session }) {
   const [loadingSug, setLoadingSug] = useState(false);
   const [bookmarked, setBookmarked] = useState(new Set());
   const bottomRef = useRef();
+  const inputRef = useRef();
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    if (inputRef.current) {
+      inputRef.current.style.height = 'auto';
+      inputRef.current.style.height = inputRef.current.scrollHeight + 'px';
+    }
+  }, [question]);
+
+  const prevHighlightRef = useRef();
+
+  useEffect(() => {
+    if (highlightMsgId && highlightMsgId !== prevHighlightRef.current && messages.length > 0) {
+      setTimeout(() => {
+        const el = document.getElementById(`msg-${highlightMsgId}`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          el.animate([{ backgroundColor: '#fef08a' }, { backgroundColor: 'transparent' }], { duration: 3000 });
+          prevHighlightRef.current = highlightMsgId;
+        }
+      }, 100);
+    }
+  }, [highlightMsgId, messages]);
 
   useEffect(() => {
     if (session) {
@@ -55,6 +74,9 @@ export default function ChatBox({ session }) {
           sources: []
         }]);
       }
+      if (!highlightMsgId) {
+        setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'auto' }), 100);
+      }
     } catch {
       setMessages([{ role: 'assistant', text: `"${session.filename}" is ready!`, sources: [] }]);
     }
@@ -83,30 +105,52 @@ export default function ChatBox({ session }) {
     } finally { setLoadingSug(false); }
   };
 
-  const handleSend = async (q = null) => {
-    const text = q || question;
-    if (!text.trim() || !session) return;
-
-    const keywords = extractKeywords(text);
-    setMessages(prev => [...prev, { role: 'user', text }]);
-    setQuestion('');
-    setSuggested([]);
-    setLoading(true);
-
+  const regenerateSuggestions = async (id) => {
+  setTimeout(async () => {
+    setLoadingSug(true);
     try {
-      const id = session._id || session.session_id;
-      const { data } = await askQuestion(id, text);
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        text: data.answer,
-        sources: data.sources || [],
-        keywords,
-        question: text,
-      }]);
-    } catch { toast.error('Failed to get answer'); }
-    finally { setLoading(false); }
-  };
+      const { data } = await suggestQuestions(id);
+      setSuggested(data.questions || []);
+    } catch {
+      setSuggested([
+        'What else does this cover?',
+        'Can you explain that further?',
+        'What are the key takeaways?',
+        'Give me an example from the document'
+      ]);
+    } finally { setLoadingSug(false); }
+  }, 800);
+};
 
+const handleSend = async (q = null) => {
+  const text = q || question;
+  if (!text.trim() || !session) return;
+
+  const keywords = extractKeywords(text);
+  setMessages(prev => [...prev, { role: 'user', text }]);
+  setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
+  setQuestion('');
+  setSuggested([]);
+  setLoading(true);
+
+  try {
+    const id = session._id || session.session_id;
+    const { data } = await askQuestion(id, text);
+    setMessages(prev => [...prev, {
+      role: 'assistant',
+      text: data.answer,
+      sources: data.sources || [],
+      keywords,
+      question: text,
+    }]);
+    setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
+
+    // Regenerate suggestions after every answer
+    regenerateSuggestions(id);
+
+  } catch { toast.error('Failed to get answer'); }
+  finally { setLoading(false); }
+};
   const handleBookmark = async (msg) => {
     try {
       const id = session._id || session.session_id;
@@ -132,7 +176,7 @@ export default function ChatBox({ session }) {
         )}
 
         {messages.map((msg, i) => (
-          <div key={i} style={{ animation: 'fadeIn 0.3s ease', display: 'flex', flexDirection: 'column', alignItems: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
+          <div id={msg.chatId ? `msg-${msg.chatId}` : undefined} key={i} style={{ animation: 'fadeIn 0.3s ease', display: 'flex', flexDirection: 'column', alignItems: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
             <p style={styles.roleLabel}>{msg.role === 'user' ? 'You' : '🧠 Assistant'}</p>
             <div style={msg.role === 'user' ? styles.userBubble : styles.aiBubble}>
               <p style={{ ...styles.msgText, color: msg.role === 'user' ? '#ffffff' : '#0f0a1e' }}>
@@ -203,6 +247,7 @@ export default function ChatBox({ session }) {
       <div style={styles.inputArea}>
         <div style={styles.inputBox}>
           <textarea
+            ref={inputRef}
             style={styles.input}
             placeholder={session ? "Ask anything about your document..." : "Select a document first..."}
             value={question}
@@ -224,9 +269,9 @@ export default function ChatBox({ session }) {
 }
 
 const styles = {
-  container: { display: 'flex', flexDirection: 'column', height: '100%' },
-  messages: { flex: 1, overflowY: 'auto', padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '16px' },
-  emptyState: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: '8px', opacity: 0.5 },
+  container: { display: 'flex', flexDirection: 'column', minHeight: 0 },
+  messages: { flexShrink: 1, overflowY: 'auto', padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '16px', minHeight: 0 },
+  emptyState: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 0', gap: '8px', opacity: 0.5 },
   emptyIcon: { fontSize: '40px' },
   emptyTitle: { fontSize: '16px', fontWeight: '700', color: '#4a3f6b' },
   roleLabel: { fontSize: '11px', fontWeight: '700', color: '#6b5e8a', marginBottom: '5px', textTransform: 'uppercase', letterSpacing: '0.5px' },
@@ -240,7 +285,7 @@ const styles = {
   bookmarkBtn: { background: 'none', border: '1.5px solid #e2e8f0', borderRadius: '6px', padding: '2px 8px', cursor: 'pointer', fontSize: '14px' },
   typingDots: { display: 'flex', gap: '5px', alignItems: 'center', padding: '2px 0' },
   dot: { width: '8px', height: '8px', background: '#a78bca', borderRadius: '50%', display: 'inline-block', animation: 'bounce 1.2s infinite' },
-  suggestions: { padding: '0 20px 14px', borderTop: '1.5px solid #ede8f5' },
+  suggestions: { padding: '0 20px 14px', borderTop: '1.5px solid #ede8f5', flexShrink: 0 },
   suggestHeader: { display: 'flex', alignItems: 'center', gap: '6px', margin: '12px 0 8px' },
   sparkle: { color: '#7c3aed', fontSize: '14px', animation: 'sparkle 2s ease-in-out infinite' },
   suggestLabel: { fontSize: '11px', color: '#6b5e8a', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' },
@@ -249,9 +294,9 @@ const styles = {
   suggestLoadingText: { fontSize: '12px', color: '#a78bca' },
   suggestRow: { display: 'flex', gap: '8px', flexWrap: 'wrap' },
   suggestBtn: { padding: '7px 14px', background: '#ffffff', border: '2px solid #0f0a1e', borderRadius: '20px', color: '#0f0a1e', fontSize: '12px', cursor: 'pointer', fontWeight: '600', boxShadow: '2px 2px 0px #0f0a1e' },
-  inputArea: { padding: '14px 20px 12px', borderTop: '2px solid #e0d7f5' },
+  inputArea: { padding: '14px 20px 12px', borderTop: '2px solid #e0d7f5', flexShrink: 0 },
   inputBox: { display: 'flex', alignItems: 'flex-end', gap: '10px', background: '#ffffff', border: '2.5px solid #0f0a1e', borderRadius: '14px', padding: '10px 14px', boxShadow: '4px 4px 0px #0f0a1e' },
-  input: { flex: 1, background: 'transparent', border: 'none', outline: 'none', color: '#0f0a1e', fontSize: '14px', resize: 'none', lineHeight: '1.5', fontFamily: 'inherit' },
+  input: { flex: 1, background: 'transparent', border: 'none', outline: 'none', color: '#0f0a1e', fontSize: '14px', resize: 'none', lineHeight: '1.5', fontFamily: 'inherit', maxHeight: '150px', overflowY: 'auto' },
   sendBtn: { width: '36px', height: '36px', background: '#7c3aed', border: '2px solid #0f0a1e', borderRadius: '8px', color: 'white', fontSize: '18px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '2px 2px 0px #0f0a1e' },
   hint: { textAlign: 'center', fontSize: '11px', color: '#a78bca', marginTop: '8px' },
 };

@@ -45,7 +45,7 @@ export default function DocFlowPanel({ analysis }) {
 }
 
 const styles = {
-  panel: { border: '2px solid', borderRadius: '14px', padding: '16px', boxShadow: '3px 3px 0px #0f0a1e' },
+  panel: { border: '2px solid', borderRadius: '14px', padding: '16px', boxShadow: '3px 3px 0px #0f0a1e', flexShrink: 0 },
   header: { display: 'flex', alignItems: 'flex-start', gap: '12px', marginBottom: '10px' },
   typeIcon: { fontSize: '28px', flexShrink: 0 },
   typeLabel: { fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' },

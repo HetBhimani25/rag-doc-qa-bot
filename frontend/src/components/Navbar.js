@@ -2,7 +2,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 
-export default function Navbar() {
+export default function Navbar({ activeSession }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
@@ -22,7 +22,7 @@ export default function Navbar() {
         <span style={styles.navBadge}>LangChain</span>
         <span style={styles.navBadge}>ChromaDB</span>
         <span style={styles.navBadge}>Groq</span>
-        <Link to="/bookmarks" style={styles.bookmarkBtn}>⭐ Bookmarks</Link>
+        <Link to="/bookmarks" state={{ session: activeSession }} style={styles.bookmarkBtn}>⭐ Bookmarks</Link>
         <span style={styles.userChip}>👤 {user?.name}</span>
         <button style={styles.logoutBtn} onClick={handleLogout}>Logout</button>
       </div>
