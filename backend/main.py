@@ -34,6 +34,19 @@ async def startup_db_check():
         print("✅ MongoDB connected")
     except Exception as e:
         print(f"❌ MongoDB connection failed: {e}")
+    
+    import threading
+    def preload():
+        try:
+            from rag_pipeline import get_embeddings
+            get_embeddings()
+            print("✅ Embeddings model preloaded")
+        except Exception as e:
+            print(f"⚠️ Embeddings preload failed: {e}")
+    
+    thread = threading.Thread(target=preload)
+    thread.daemon = True
+    thread.start()
 
 # ── HEALTH ──
 @app.get("/")

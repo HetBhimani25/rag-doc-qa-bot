@@ -12,7 +12,8 @@ API.interceptors.request.use((req) => {
 
 export const registerUser    = (data) => API.post('/auth/register', data);
 export const loginUser       = (data) => API.post('/auth/login', data);
-export const uploadDocument  = (formData) => API.post('/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+export const uploadDocument  = (formData) => API.post('/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 300000 });
 export const getDocuments    = () => API.get('/documents');
 export const deleteDocument  = (id) => API.delete(`/documents/${id}`);
 export const askQuestion     = (session_id, question) => API.post('/ask', { session_id, question });
