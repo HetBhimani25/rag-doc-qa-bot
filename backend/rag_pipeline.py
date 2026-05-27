@@ -102,7 +102,7 @@ def answer_question(question: str, session_id: str) -> dict:
 
     return {"answer": answer, "sources": sources}
 
-def get_suggested_questions(session_id: str) -> list:
+def get_suggested_questions(session_id: str, previous_questions: list = None) -> list:
     vectorstore = Chroma(
         collection_name=f"session_{session_id}",
         embedding_function=get_embeddings(),   # ← changed
@@ -112,11 +112,20 @@ def get_suggested_questions(session_id: str) -> list:
     docs = vectorstore.similarity_search("main topic overview summary", k=5)
     context = "\n\n".join(doc.page_content for doc in docs)
 
-    completion = llm.invoke(
-        f"""Based on the following document content, generate exactly 4 short, specific, 
-and relevant questions a user might want to ask about this document.
-Return ONLY a JSON array of 4 question strings. No explanation, no markdown, no extra text.
+    exclusion_rule = ""
+    if previous_questions:
+        exclusion_rule = "\nDO NOT suggest any of these previously asked questions or anything extremely similar:\n"
+        for q in previous_questions:
+            exclusion_rule += f"- {q}\n"
 
+    completion = llm.invoke(
+        f"""Based on the following document content, generate exactly 4 short, specific questions.
+
+CRITICAL RULES:
+1. The EXACT ANSWER to every question you suggest MUST be explicitly written within the provided Document content.
+2. Do not suggest hypothetical, external, or generic questions. Ensure the document directly answers the question.
+3. Return ONLY a JSON array of 4 question strings. No explanation, no markdown, no extra text.
+{exclusion_rule}
 Document content:
 {context}
 

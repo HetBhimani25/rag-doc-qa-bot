@@ -31,18 +31,18 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 async def startup_db_check():
     try:
         await users_col.find_one({})
-        print("✅ MongoDB connected")
+        print("MongoDB connected")
     except Exception as e:
-        print(f"❌ MongoDB connection failed: {e}")
+        print(f"MongoDB connection failed: {e}")
     
     import threading
     def preload():
         try:
             from rag_pipeline import get_embeddings
             get_embeddings()
-            print("✅ Embeddings model preloaded")
+            print("Embeddings model preloaded")
         except Exception as e:
-            print(f"⚠️ Embeddings preload failed: {e}")
+            print(f"Embeddings preload failed: {e}")
     
     thread = threading.Thread(target=preload)
     thread.daemon = True
@@ -222,6 +222,14 @@ async def get_bookmarks(current_user: dict = Depends(get_current_user)):
     bookmarks = await bookmarks_col.find(
         {"user_id": current_user["_id"]}
     ).sort("created_at", -1).to_list(100)
+
+    session_ids = list(set(b["session_id"] for b in bookmarks))
+    sessions = await sessions_col.find({"_id": {"$in": session_ids}}).to_list(None)
+    session_map = {s["_id"]: s.get("filename", "Unknown Document") for s in sessions}
+
+    for b in bookmarks:
+        b["filename"] = session_map.get(b["session_id"], "Unknown Document")
+
     return bookmarks
 
 
@@ -238,7 +246,13 @@ async def suggest_questions_route(
     current_user: dict = Depends(get_current_user)
 ):
     try:
-        questions = get_suggested_questions(req.session_id)
+        # Fetch previous chats to extract already asked questions
+        chats = await chats_col.find(
+            {"session_id": req.session_id, "user_id": current_user["_id"]}
+        ).to_list(None)
+        previous_questions = [chat["question"] for chat in chats]
+
+        questions = get_suggested_questions(req.session_id, previous_questions)
         return {"questions": questions}
     except Exception as e:
         raise HTTPException(500, f"Failed to generate questions: {str(e)}")

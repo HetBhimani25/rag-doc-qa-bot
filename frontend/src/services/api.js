@@ -10,6 +10,19 @@ API.interceptors.request.use((req) => {
   return req;
 });
 
+API.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.data?.detail && typeof error.response.data.detail === 'string') {
+      const msg = error.response.data.detail;
+      if (msg.includes('429') || msg.includes('Rate limit reached')) {
+        error.response.data.detail = "⏳ AI Rate Limit Reached. Please wait a few minutes before trying again.";
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 export const registerUser    = (data) => API.post('/auth/register', data);
 export const loginUser       = (data) => API.post('/auth/login', data);
 export const uploadDocument  = (formData) => API.post('/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' },

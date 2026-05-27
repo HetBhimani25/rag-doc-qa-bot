@@ -148,7 +148,7 @@ const handleSend = async (q = null) => {
     // Regenerate suggestions after every answer
     regenerateSuggestions(id);
 
-  } catch { toast.error('Failed to get answer'); }
+  } catch (err) { toast.error(err.response?.data?.detail || 'Failed to get answer'); }
   finally { setLoading(false); }
 };
   const handleBookmark = async (msg) => {
