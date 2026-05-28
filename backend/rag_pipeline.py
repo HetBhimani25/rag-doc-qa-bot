@@ -6,7 +6,7 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import PyPDFLoader, TextLoader
 from langchain_groq import ChatGroq
 from langchain_chroma import Chroma
-from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_huggingface import HuggingFaceEndpointEmbeddings
 from langchain_core.prompts import PromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
@@ -27,7 +27,19 @@ _embeddings = None
 def get_embeddings():
     global _embeddings
     if _embeddings is None:
-        _embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+        hf_token = os.getenv("HUGGINGFACEHUB_API_TOKEN") or os.getenv("HF_TOKEN")
+        if hf_token:
+            print("Using cloud HuggingFaceEndpointEmbeddings (memory efficient)")
+            _embeddings = HuggingFaceEndpointEmbeddings(
+                model="sentence-transformers/all-MiniLM-L6-v2",
+                task="feature-extraction",
+                huggingfacehub_api_token=hf_token
+            )
+        else:
+            print("WARNING: HUGGINGFACEHUB_API_TOKEN / HF_TOKEN not found in environment variables.")
+            print("Falling back to local HuggingFaceEmbeddings (which loads PyTorch and consumes ~400MB+ RAM).")
+            from langchain_huggingface import HuggingFaceEmbeddings
+            _embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
     return _embeddings
 
 # Text splitter
