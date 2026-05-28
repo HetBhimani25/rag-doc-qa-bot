@@ -20,7 +20,7 @@ class CustomHFEmbeddings(Embeddings):
     def __init__(self, model: str, api_token: str):
         self.model = model
         self.token = api_token
-        self.api_url = f"https://router.huggingface.co/hf-inference/models/{self.model}"
+        self.api_url = f"https://router.huggingface.co/hf-inference/models/{self.model}/pipeline/feature-extraction"
         self.headers = {"Authorization": f"Bearer {self.token}"}
 
     def _embed(self, texts: List[str]) -> List[List[float]]:
