@@ -22,3 +22,4 @@ class BookmarkRequest(BaseModel):
     question:   str
     answer:     str
     sources:    list
+    chat_id:    Optional[str] = None

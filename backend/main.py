@@ -182,6 +182,7 @@ async def ask_question_route(
         }
         await chats_col.insert_one(chat)
 
+        result["chat_id"] = chat["_id"]
         return result
     except Exception as e:
         raise HTTPException(500, f"Failed to answer: {str(e)}")
@@ -211,6 +212,7 @@ async def add_bookmark(
         "question":   req.question,
         "answer":     req.answer,
         "sources":    req.sources,
+        "chat_id":    req.chat_id,
         "created_at": datetime.utcnow().isoformat()
     }
     await bookmarks_col.insert_one(bookmark)

@@ -19,7 +19,7 @@ export default function ChatBox({ session, highlightMsgId }) {
   const [loading,    setLoading]    = useState(false);
   const [suggested,  setSuggested]  = useState([]);
   const [loadingSug, setLoadingSug] = useState(false);
-  const [bookmarked, setBookmarked] = useState(new Set());
+  const [bookmarked, setBookmarked] = useState({});
   const bottomRef = useRef();
   const inputRef = useRef();
 
@@ -64,7 +64,7 @@ export default function ChatBox({ session, highlightMsgId }) {
         const msgs = [];
         data.forEach(chat => {
           msgs.push({ role: 'user', text: chat.question });
-          msgs.push({ role: 'assistant', text: chat.answer, sources: chat.sources, chatId: chat._id, keywords: extractKeywords(chat.question) });
+          msgs.push({ role: 'assistant', text: chat.answer, sources: chat.sources, chatId: chat._id, keywords: extractKeywords(chat.question), question: chat.question });
         });
         setMessages(msgs);
       } else {
@@ -85,8 +85,9 @@ export default function ChatBox({ session, highlightMsgId }) {
   const loadBookmarks = async () => {
     try {
       const { data } = await getBookmarks();
-      const ids = new Set(data.map(b => b._id));
-      setBookmarked(ids);
+      const map = {};
+      data.forEach(b => { if (b.chat_id) map[b.chat_id] = b._id; });
+      setBookmarked(map);
     } catch {}
   };
 
@@ -140,6 +141,7 @@ const handleSend = async (q = null) => {
       role: 'assistant',
       text: data.answer,
       sources: data.sources || [],
+      chatId: data.chat_id,
       keywords,
       question: text,
     }]);
@@ -153,16 +155,29 @@ const handleSend = async (q = null) => {
 };
   const handleBookmark = async (msg) => {
     try {
-      const id = session._id || session.session_id;
-      const { data } = await addBookmark({
-        session_id: id,
-        question: msg.question || '',
-        answer: msg.text,
-        sources: msg.sources || []
-      });
-      setBookmarked(prev => new Set([...prev, data.id]));
-      toast.success('⭐ Bookmarked!');
-    } catch { toast.error('Bookmark failed'); }
+      if (msg.chatId && bookmarked[msg.chatId]) {
+        await deleteBookmark(bookmarked[msg.chatId]);
+        setBookmarked(prev => {
+          const next = { ...prev };
+          delete next[msg.chatId];
+          return next;
+        });
+        toast.success('Bookmark removed');
+      } else {
+        const id = session._id || session.session_id;
+        const { data } = await addBookmark({
+          session_id: id,
+          question: msg.question || '',
+          answer: msg.text,
+          sources: msg.sources || [],
+          chat_id: msg.chatId || null
+        });
+        if (msg.chatId) {
+          setBookmarked(prev => ({ ...prev, [msg.chatId]: data.id }));
+        }
+        toast.success('⭐ Bookmarked!');
+      }
+    } catch { toast.error('Action failed'); }
   };
 
   return (
@@ -196,8 +211,21 @@ const handleSend = async (q = null) => {
                     ))}
                   </div>
                 )}
-                <button style={styles.bookmarkBtn} onClick={() => handleBookmark(msg)} title="Bookmark this answer">
-                  ⭐
+                <button 
+                  style={{ 
+                    ...styles.bookmarkBtn, 
+                    opacity: 1, 
+                    cursor: msg.chatId && bookmarked[msg.chatId] ? 'not-allowed' : 'pointer',
+                    background: msg.chatId && bookmarked[msg.chatId] ? '#f3effe' : 'none',
+                    color: msg.chatId && bookmarked[msg.chatId] ? '#7c3aed' : '#0f0a1e',
+                    fontWeight: msg.chatId && bookmarked[msg.chatId] ? '700' : '500',
+                    border: msg.chatId && bookmarked[msg.chatId] ? '2px solid #a78bca' : '1.5px solid #e2e8f0'
+                  }} 
+                  onClick={() => !(msg.chatId && bookmarked[msg.chatId]) && handleBookmark(msg)} 
+                  title={msg.chatId && bookmarked[msg.chatId] ? "Already bookmarked" : "Bookmark this answer"}
+                  disabled={!!(msg.chatId && bookmarked[msg.chatId])}
+                >
+                  {msg.chatId && bookmarked[msg.chatId] ? '🌟 Redirect to the bookmarked' : '⭐ Bookmark'}
                 </button>
               </div>
             )}
