@@ -1,17 +1,54 @@
 import os
 import uuid
 import tempfile
+import httpx
+from typing import List
 from dotenv import load_dotenv
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import PyPDFLoader, TextLoader
 from langchain_groq import ChatGroq
 from langchain_chroma import Chroma
-from langchain_huggingface import HuggingFaceEndpointEmbeddings
+from langchain_core.embeddings import Embeddings
 from langchain_core.prompts import PromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
 
 load_dotenv()
+
+# Custom HuggingFace serverless API Embeddings class to bypass LangChain/HuggingFaceHub client bugs
+class CustomHFEmbeddings(Embeddings):
+    def __init__(self, model: str, api_token: str):
+        self.model = model
+        self.token = api_token
+        self.api_url = f"https://api-inference.huggingface.co/models/{self.model}"
+        self.headers = {"Authorization": f"Bearer {self.token}"}
+
+    def _embed(self, texts: List[str]) -> List[List[float]]:
+        response = httpx.post(
+            self.api_url,
+            headers=self.headers,
+            json={"inputs": texts, "options": {"wait_for_model": True}},
+            timeout=60.0
+        )
+        if response.status_code != 200:
+            raise ValueError(f"HuggingFace API error {response.status_code}: {response.text}")
+        
+        res = response.json()
+        if not isinstance(res, list):
+            raise ValueError(f"Unexpected response format from HuggingFace API: {res}")
+        return res
+
+    def embed_documents(self, texts: List[str]) -> List[List[float]]:
+        # Batch to prevent payload size limits
+        batch_size = 16
+        embeddings = []
+        for i in range(0, len(texts), batch_size):
+            batch = texts[i:i+batch_size]
+            embeddings.extend(self._embed(batch))
+        return embeddings
+
+    def embed_query(self, text: str) -> List[float]:
+        return self._embed([text])[0]
 
 # Initialize Groq LLM
 llm = ChatGroq(
@@ -29,11 +66,10 @@ def get_embeddings():
     if _embeddings is None:
         hf_token = os.getenv("HUGGINGFACEHUB_API_TOKEN") or os.getenv("HF_TOKEN")
         if hf_token:
-            print("Using cloud HuggingFaceEndpointEmbeddings (memory efficient)")
-            _embeddings = HuggingFaceEndpointEmbeddings(
+            print("Using cloud CustomHFEmbeddings (memory efficient)")
+            _embeddings = CustomHFEmbeddings(
                 model="sentence-transformers/all-MiniLM-L6-v2",
-                task="feature-extraction",
-                huggingfacehub_api_token=hf_token
+                api_token=hf_token
             )
         else:
             print("WARNING: HUGGINGFACEHUB_API_TOKEN / HF_TOKEN not found in environment variables.")
