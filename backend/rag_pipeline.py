@@ -24,19 +24,29 @@ class CustomHFEmbeddings(Embeddings):
         self.headers = {"Authorization": f"Bearer {self.token}"}
 
     def _embed(self, texts: List[str]) -> List[List[float]]:
-        response = httpx.post(
-            self.api_url,
-            headers=self.headers,
-            json={"inputs": texts, "options": {"wait_for_model": True}},
-            timeout=60.0
-        )
-        if response.status_code != 200:
-            raise ValueError(f"HuggingFace API error {response.status_code}: {response.text}")
-        
-        res = response.json()
-        if not isinstance(res, list):
-            raise ValueError(f"Unexpected response format from HuggingFace API: {res}")
-        return res
+        import time
+        max_retries = 3
+        last_err = None
+        for attempt in range(max_retries):
+            try:
+                response = httpx.post(
+                    self.api_url,
+                    headers=self.headers,
+                    json={"inputs": texts, "options": {"wait_for_model": True}},
+                    timeout=60.0
+                )
+                if response.status_code != 200:
+                    raise ValueError(f"HuggingFace API error {response.status_code}: {response.text}")
+                
+                res = response.json()
+                if not isinstance(res, list):
+                    raise ValueError(f"Unexpected response format from HuggingFace API: {res}")
+                return res
+            except (httpx.ConnectError, httpx.ConnectTimeout, httpx.RequestError) as e:
+                last_err = e
+                print(f"Network connection/DNS error on attempt {attempt + 1}: {e}. Retrying in 2 seconds...")
+                time.sleep(2)
+        raise ValueError(f"Failed to connect to HuggingFace API after {max_retries} attempts. Details: {last_err}")
 
     def embed_documents(self, texts: List[str]) -> List[List[float]]:
         # Batch to prevent payload size limits
