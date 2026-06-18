@@ -66,36 +66,6 @@ Answer + Source Pages + Keyword Highlights
 
 ---
 
-## 📁 Project Structure
-
-rag-doc-qa-bot/
-├── backend/
-│   ├── main.py              # FastAPI routes (auth, documents, chat, bookmarks)
-│   ├── rag_pipeline.py      # RAG logic, doc type analyzer, question suggester
-│   ├── auth.py              # JWT authentication
-│   ├── database.py          # MongoDB async connection
-│   ├── models.py            # Pydantic request models
-│   ├── vector_store.py      # ChromaDB session management
-│   └── requirements.txt
-└── frontend/
-├── src/
-│   ├── components/
-│   │   ├── ChatBox.js       # Chat UI, keyword highlight, bookmarks
-│   │   ├── DocSidebar.js    # Document list sidebar
-│   │   ├── DocFlowPanel.js  # Smart learning/product flow display
-│   │   ├── Navbar.js
-│   │   └── UploadZone.js
-│   ├── pages/
-│   │   ├── Home.js
-│   │   ├── Bookmarks.js
-│   │   ├── Login.js
-│   │   └── Register.js
-│   ├── context/AuthContext.js
-│   └── services/api.js
-└── public/
-
----
-
 ## 🚀 Run Locally
 
 ### Backend
