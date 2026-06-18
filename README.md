@@ -30,7 +30,7 @@
 | **Frontend** | React.js, Context API, React Router |
 | **Backend** | Python, FastAPI |
 | **AI/LLM** | LangChain, Groq (llama-3.3-70b-versatile) |
-| **Embeddings** | HuggingFace (all-MiniLM-L6-v2) |
+| **Embeddings** | HuggingFace (all-MiniLM-L6-v2) *[Cloud API offloaded in prod for memory efficiency]* |
 | **Vector DB** | ChromaDB |
 | **Database** | MongoDB Atlas (motor async) |
 | **Auth** | JWT (python-jose + passlib) |
@@ -99,21 +99,42 @@ rag-doc-qa-bot/
 ## 🚀 Run Locally
 
 ### Backend
+
+1. Navigate to the backend folder:
 ```bash
-
 cd backend
-python -m venv venv
-venv\Scripts\activate
-pip install -r requirements.txt
+```
 
-Create .env file
-GROQ_API_KEY=groq_api_key
+2. Create a virtual environment and activate it:
+```bash
+# Create venv
+python -m venv venv
+
+# Activate venv (Windows)
+venv\Scripts\activate
+
+# Activate venv (Linux/macOS)
+# source venv/bin/activate
+```
+
+3. Install dependencies:
+```bash
+pip install -r requirements.txt
+```
+
+4. Create a `.env` file in the `backend/` directory:
+```text
+GROQ_API_KEY=your_groq_api_key
 MONGODB_URI=mongodb://localhost:27017/docwhiz
-JWT_SECRET=your_secret
+JWT_SECRET=your_jwt_secret_key
 JWT_ALGORITHM=HS256
 JWT_EXPIRE_DAYS=7
-ALLOWED_ORIGINS=http://localhost:3000uvicorn main:app --reload --port 8000
+ALLOWED_ORIGINS=http://localhost:3000
+HUGGINGFACEHUB_API_TOKEN=your_huggingface_access_token_optional
+```
 
+5. Run the FastAPI server:
+```bash
 uvicorn main:app --reload --port 8000
 ```
 
