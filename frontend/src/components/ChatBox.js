@@ -180,6 +180,11 @@ const handleSend = async (q = null) => {
     } catch { toast.error('Action failed'); }
   };
 
+  const handleCopy = (text) => {
+    navigator.clipboard.writeText(text);
+    toast.success('Copied to clipboard!');
+  };
+
   return (
     <div style={styles.container}>
       <div style={styles.messages}>
@@ -226,6 +231,13 @@ const handleSend = async (q = null) => {
                   disabled={!!(msg.chatId && bookmarked[msg.chatId])}
                 >
                   {msg.chatId && bookmarked[msg.chatId] ? '🌟 Redirect to the bookmarked' : '⭐ Bookmark'}
+                </button>
+                <button
+                  style={styles.copyBtn}
+                  onClick={() => handleCopy(msg.text)}
+                  title="Copy this answer"
+                >
+                  📋 Copy
                 </button>
               </div>
             )}
@@ -311,6 +323,7 @@ const styles = {
   sourcesLabel: { fontSize: '11px', color: '#6b5e8a', fontWeight: '600' },
   sourceTag: { padding: '2px 10px', background: '#f3effe', border: '1.5px solid #a78bca', borderRadius: '20px', fontSize: '11px', color: '#7c3aed', fontWeight: '600' },
   bookmarkBtn: { background: 'none', border: '1.5px solid #e2e8f0', borderRadius: '6px', padding: '2px 8px', cursor: 'pointer', fontSize: '14px' },
+  copyBtn: { background: 'none', border: '1.5px solid #e2e8f0', borderRadius: '6px', padding: '2px 8px', cursor: 'pointer', fontSize: '14px', color: '#0f0a1e', fontWeight: '500' },
   typingDots: { display: 'flex', gap: '5px', alignItems: 'center', padding: '2px 0' },
   dot: { width: '8px', height: '8px', background: '#a78bca', borderRadius: '50%', display: 'inline-block', animation: 'bounce 1.2s infinite' },
   suggestions: { padding: '0 20px 14px', borderTop: '1.5px solid #ede8f5', flexShrink: 0 },
